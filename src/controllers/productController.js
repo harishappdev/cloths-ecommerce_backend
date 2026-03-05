@@ -62,6 +62,14 @@ exports.createProduct = catchAsync(async (req, res, next) => {
         console.log('Saved images paths:', req.body.images);
     }
 
+    // Ensure sizes and colors are arrays if they come as strings (single select)
+    if (req.body.sizes && typeof req.body.sizes === 'string') {
+        req.body.sizes = [req.body.sizes];
+    }
+    if (req.body.colors && typeof req.body.colors === 'string') {
+        req.body.colors = [req.body.colors];
+    }
+
     const newProduct = await Product.create(req.body);
 
     res.status(201).json({
@@ -78,8 +86,17 @@ exports.createProduct = catchAsync(async (req, res, next) => {
  */
 exports.updateProduct = catchAsync(async (req, res, next) => {
     // Handle images if uploaded via multer
+    // Handle images if uploaded via multer
     if (req.files && req.files.length > 0) {
         req.body.images = req.files.map(file => `/img/products/${file.filename}`);
+    }
+
+    // Ensure sizes and colors are arrays if they come as strings
+    if (req.body.sizes && typeof req.body.sizes === 'string') {
+        req.body.sizes = [req.body.sizes];
+    }
+    if (req.body.colors && typeof req.body.colors === 'string') {
+        req.body.colors = [req.body.colors];
     }
 
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, {

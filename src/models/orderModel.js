@@ -33,6 +33,27 @@ const orderSchema = new mongoose.Schema({
         enum: ['PayPal', 'Stripe', 'COD', 'Credit Card'],
         default: 'COD'
     },
+    subtotal: {
+        type: Number,
+        required: true,
+        default: 0.0
+    },
+    taxPrice: {
+        type: Number,
+        required: true,
+        default: 0.0
+    },
+    shippingPrice: {
+        type: Number,
+        required: true,
+        default: 0.0
+    },
+    discountAmount: {
+        type: Number,
+        required: true,
+        default: 0.0
+    },
+    couponCode: String,
     totalPrice: {
         type: Number,
         required: true,
@@ -41,7 +62,7 @@ const orderSchema = new mongoose.Schema({
     orderStatus: {
         type: String,
         required: true,
-        enum: ['pending', 'paid', 'shipped', 'delivered', 'cancelled'],
+        enum: ['pending', 'paid', 'shipped', 'delivered', 'cancelled', 'return_requested', 'returned'],
         default: 'pending'
     },
     paymentStatus: {

@@ -30,7 +30,9 @@ exports.createOrder = catchAsync(async (req, res, next) => {
         orderItems.push({
             name: product.name,
             quantity: item.quantity,
-            image: product.images[0],
+            image: (product.images && product.images.length > 0)
+                ? product.images[0]
+                : 'https://via.placeholder.com/600x800?text=No+Image',
             price: product.price, // Snapshot price
             size: item.size,
             color: item.color,
@@ -42,13 +44,49 @@ exports.createOrder = catchAsync(async (req, res, next) => {
         await product.save({ validateBeforeSave: false });
     }
 
-    // 4) Create order
+    // 4) Calculate Prices (Discounts, Tax, Shipping)
+    const Coupon = require('../models/couponModel');
+    const { couponCode, deliveryOption } = req.body;
+    let discountAmount = 0;
+    let subtotal = cart.totalPrice;
+
+    if (couponCode) {
+        const coupon = await Coupon.findOne({
+            code: couponCode.toUpperCase(),
+            isActive: true,
+            expiryDate: { $gt: Date.now() },
+            $expr: { $lt: ['$usageCount', '$usageLimit'] }
+        });
+
+        if (coupon && subtotal >= coupon.minCartValue) {
+            if (coupon.discountType === 'percentage') {
+                discountAmount = (subtotal * coupon.discount) / 100;
+            } else {
+                discountAmount = coupon.discount;
+            }
+
+            // Increment usage
+            coupon.usageCount += 1;
+            await coupon.save();
+        }
+    }
+
+    const shippingPrice = deliveryOption === 'express' ? 1500 : 0; // Matching frontend logic (Express: ₹1500, Standard: ₹0)
+    const taxPrice = (subtotal - discountAmount) * 0.08; // 8% tax on discounted amount
+    const totalPrice = subtotal - discountAmount + shippingPrice + taxPrice;
+
+    // 5) Create order
     const order = await Order.create({
         user: req.user.id,
         orderItems,
         shippingAddress,
         paymentMethod,
-        totalPrice: cart.totalPrice,
+        subtotal,
+        taxPrice,
+        shippingPrice,
+        discountAmount,
+        couponCode: couponCode ? couponCode.toUpperCase() : undefined,
+        totalPrice,
         isPaid: paymentMethod === 'Credit Card',
         paidAt: paymentMethod === 'Credit Card' ? Date.now() : undefined,
         paymentStatus: paymentMethod === 'Credit Card' ? 'completed' : 'pending',
@@ -150,6 +188,121 @@ exports.updateOrderStatus = catchAsync(async (req, res, next) => {
     }
 
     await order.save();
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            order
+        }
+    });
+});
+/**
+ * @desc    Cancel order
+ * @route   PATCH /api/v1/orders/:id/cancel
+ */
+exports.cancelOrder = catchAsync(async (req, res, next) => {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+        return next(new AppError('No order found with that ID', 404));
+    }
+
+    // Check ownership
+    if (order.user.toString() !== req.user.id && req.user.role !== 'admin') {
+        return next(new AppError('You are not authorized to cancel this order', 403));
+    }
+
+    // Check status
+    if (!['pending', 'paid'].includes(order.orderStatus)) {
+        return next(new AppError(`You cannot cancel an order that is already ${order.orderStatus}`, 400));
+    }
+
+    order.orderStatus = 'cancelled';
+    await order.save();
+
+    // Restore stock
+    for (const item of order.orderItems) {
+        const product = await Product.findById(item.product);
+        if (product) {
+            product.stock += item.quantity;
+            await product.save({ validateBeforeSave: false });
+        }
+    }
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            order
+        }
+    });
+});
+
+/**
+ * @desc    Request return
+ * @route   PATCH /api/v1/orders/:id/return
+ */
+exports.requestReturn = catchAsync(async (req, res, next) => {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+        return next(new AppError('No order found with that ID', 404));
+    }
+
+    if (order.user.toString() !== req.user.id) {
+        return next(new AppError('You are not authorized to request return for this order', 403));
+    }
+
+    if (order.orderStatus !== 'delivered') {
+        return next(new AppError('You can only return delivered orders', 400));
+    }
+
+    // Set status to return_requested
+    order.orderStatus = 'return_requested';
+    await order.save();
+
+    res.status(200).json({
+        status: 'success',
+        message: 'Return request submitted successfully',
+        data: {
+            order
+        }
+    });
+});
+
+/**
+ * @desc    Process return (Admin only)
+ * @route   PATCH /api/v1/orders/:id/process-return
+ */
+exports.processReturn = catchAsync(async (req, res, next) => {
+    const { status } = req.body; // 'returned' (approved) or 'delivered' (rejected)
+
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+        return next(new AppError('No order found with that ID', 404));
+    }
+
+    if (order.orderStatus !== 'return_requested') {
+        return next(new AppError('Order is not in a return requested state', 400));
+    }
+
+    if (!['returned', 'delivered'].includes(status)) {
+        return next(new AppError('Invalid return process status', 400));
+    }
+
+    order.orderStatus = status;
+    await order.save();
+
+    // If approved (returned), restore stock
+    if (status === 'returned') {
+        for (const item of order.orderItems) {
+            const product = await Product.findById(item.product);
+            if (product) {
+                product.stock += item.quantity;
+                await product.save({ validateBeforeSave: false });
+            }
+        }
+    }
 
     res.status(200).json({
         status: 'success',

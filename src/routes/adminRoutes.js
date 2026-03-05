@@ -9,5 +9,7 @@ router.use(authMiddleware.protect);
 router.use(authMiddleware.restrictTo('admin'));
 
 router.get('/stats', adminController.getDashboardStats);
+router.get('/analytics', adminController.getSalesAnalytics);
+router.get('/analytics/daily', adminController.getDailySalesAnalytics);
 
 module.exports = router;

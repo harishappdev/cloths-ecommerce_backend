@@ -28,15 +28,9 @@ router.post(
     productController.createProduct
 );
 
-router.patch(
-    '/:id',
-    upload.array('images', 5),
-    productController.updateProduct
-);
-
 router
     .route('/:id')
-    .patch(productController.updateProduct)
+    .patch(upload.array('images', 5), productController.updateProduct)
     .delete(productController.deleteProduct);
 
 module.exports = router;

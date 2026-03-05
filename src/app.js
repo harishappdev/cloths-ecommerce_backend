@@ -82,7 +82,9 @@ app.use(hpp({
         'ratings',
         'category',
         'sizes',
-        'colors'
+        'colors',
+        'fabric',
+        'occasion'
     ]
 }));
 
@@ -95,6 +97,8 @@ const cartRouter = require('./routes/cartRoutes');
 const orderRouter = require('./routes/orderRoutes');
 const paymentRouter = require('./routes/paymentRoutes');
 const adminRouter = require('./routes/adminRoutes');
+const reviewRouter = require('./routes/reviewRoutes');
+const couponRouter = require('./routes/couponRoutes');
 
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/users', userRouter);
@@ -104,6 +108,8 @@ app.use('/api/v1/cart', cartRouter);
 app.use('/api/v1/orders', orderRouter);
 app.use('/api/v1/payments', paymentRouter);
 app.use('/api/v1/admin', adminRouter);
+app.use('/api/v1/reviews', reviewRouter);
+app.use('/api/v1/coupons', couponRouter);
 
 // Handle undefined routes - Catch-all middleware
 app.use((req, res, next) => {

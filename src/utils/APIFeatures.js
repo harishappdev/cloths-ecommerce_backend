@@ -9,11 +9,23 @@ class APIFeatures {
         const excludedFields = ['page', 'sort', 'limit', 'fields', 'search'];
         excludedFields.forEach(el => delete queryObj[el]);
 
-        // 1B) Advanced filtering (gte, gt, lte, lt)
+        // 1B) Advanced filtering (gte, gt, lte, lt, ne)
         let queryStr = JSON.stringify(queryObj);
-        queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, match => `$${match}`);
+        queryStr = queryStr.replace(/\b(gte|gt|lte|lt|ne)\b/g, match => `$${match}`);
 
         let filterObj = JSON.parse(queryStr);
+
+        // Handle comma separated values for specific fields (multi-select filter)
+        const multiSelectFields = ['sizes', 'colors', 'brand', 'category', 'fabric', 'occasion'];
+        multiSelectFields.forEach(field => {
+            if (this.queryString[field] && typeof this.queryString[field] === 'string') {
+                const values = this.queryString[field].split(',');
+                if (values.length > 1) {
+                    filterObj[field] = { $in: values };
+                }
+            }
+        });
+
         if (this.queryString.sale === 'true') {
             filterObj.discountPrice = { $exists: true, $ne: null };
         }

@@ -11,7 +11,7 @@ const catchAsync = require('../utils/asyncHandler');
 exports.getDashboardStats = catchAsync(async (req, res, next) => {
     try {
         console.log('📊 Fetching dashboard stats...');
-        
+
         // 1) Total Revenue (sum of all paid orders)
         const revenueData = await Order.aggregate([
             { $match: { isPaid: true } },
@@ -33,6 +33,14 @@ exports.getDashboardStats = catchAsync(async (req, res, next) => {
         const totalUsers = await User.countDocuments();
         console.log('👥 Total users:', totalUsers);
 
+        // 6) Total Reviews
+        const Review = require('../models/reviewModel');
+        const totalReviews = await Review.countDocuments();
+
+        // 7) Total Coupons
+        const Coupon = require('../models/couponModel');
+        const totalCoupons = await Coupon.countDocuments();
+
         // 5) Recent Orders
         const recentOrders = await Order.find()
             .sort('-createdAt')
@@ -47,6 +55,8 @@ exports.getDashboardStats = catchAsync(async (req, res, next) => {
                 totalOrders,
                 totalProducts,
                 totalUsers,
+                totalReviews,
+                totalCoupons,
                 recentOrders
             }
         });
@@ -54,4 +64,69 @@ exports.getDashboardStats = catchAsync(async (req, res, next) => {
         console.error('❌ Error in getDashboardStats:', err);
         return next(err);
     }
+});
+
+/**
+ * @desc    Get sales analytics (last 6 months)
+ * @route   GET /api/v1/admin/analytics
+ */
+exports.getSalesAnalytics = catchAsync(async (req, res, next) => {
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+    const analytics = await Order.aggregate([
+        {
+            $match: {
+                createdAt: { $gte: sixMonthsAgo },
+                isPaid: true
+            }
+        },
+        {
+            $group: {
+                _id: { $month: '$createdAt' },
+                revenue: { $sum: '$totalPrice' },
+                orderCount: { $sum: 1 }
+            }
+        },
+        { $sort: { '_id': 1 } }
+    ]);
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            analytics
+        }
+    });
+});
+
+/**
+ * @desc    Get daily sales analytics (last 7 days)
+ * @route   GET /api/v1/admin/analytics/daily
+ */
+exports.getDailySalesAnalytics = catchAsync(async (req, res, next) => {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const analytics = await Order.aggregate([
+        {
+            $match: {
+                createdAt: { $gte: sevenDaysAgo },
+                isPaid: true
+            }
+        },
+        {
+            $group: {
+                _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                revenue: { $sum: '$totalPrice' }
+            }
+        },
+        { $sort: { '_id': 1 } }
+    ]);
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            analytics
+        }
+    });
 });

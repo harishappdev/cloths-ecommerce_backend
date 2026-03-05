@@ -34,7 +34,24 @@ const userSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now()
-    }
+    },
+    wishlist: [
+        {
+            type: mongoose.Schema.ObjectId,
+            ref: 'Product'
+        }
+    ],
+    addresses: [
+        {
+            name: String,
+            street: String,
+            city: String,
+            state: String,
+            zipCode: String,
+            country: { type: String, default: 'India' },
+            isDefault: { type: Boolean, default: false }
+        }
+    ]
 });
 
 const crypto = require('crypto');

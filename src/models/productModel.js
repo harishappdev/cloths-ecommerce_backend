@@ -34,9 +34,14 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: [true, 'A product must have a category']
     },
+    brand: {
+        type: String,
+        required: [true, 'A product must have a brand'],
+        trim: true
+    },
     sizes: {
         type: [String],
-        enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Universal'],
+        enum: ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'Universal', '38', '40', '42', '44', '6', '7', '8', '9', '10', '11', '12'],
         default: ['Universal']
     },
     colors: [String],
@@ -48,6 +53,22 @@ const productSchema = new mongoose.Schema({
     images: {
         type: [String],
         required: [true, 'A product must have at least one image']
+    },
+    fabric: {
+        type: String,
+        trim: true
+    },
+    occasion: {
+        type: String,
+        trim: true,
+        enum: ['Casual', 'Formal', 'Party', 'Ethnic', 'Sport', 'Work']
+    },
+    ratingDistribution: {
+        1: { type: Number, default: 0 },
+        2: { type: Number, default: 0 },
+        3: { type: Number, default: 0 },
+        4: { type: Number, default: 0 },
+        5: { type: Number, default: 0 }
     },
     ratings: {
         type: Number,
@@ -66,8 +87,7 @@ const productSchema = new mongoose.Schema({
     },
     createdAt: {
         type: Date,
-        default: Date.now(),
-        select: false
+        default: Date.now
     }
 }, {
     toJSON: { virtuals: true },

@@ -36,8 +36,14 @@ class APIFeatures {
 
     search() {
         if (this.queryString.search) {
+            const searchRegex = { $regex: this.queryString.search, $options: 'i' };
             this.query = this.query.find({
-                name: { $regex: this.queryString.search, $options: 'i' }
+                $or: [
+                    { name: searchRegex },
+                    { brand: searchRegex },
+                    { category: searchRegex },
+                    { description: searchRegex }
+                ]
             });
         }
         return this;

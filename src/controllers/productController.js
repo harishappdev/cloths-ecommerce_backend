@@ -150,3 +150,28 @@ exports.getProductBySlug = catchAsync(async (req, res, next) => {
         }
     });
 });
+
+/**
+ * @desc    Get unique filter options
+ * @route   GET /api/v1/products/filters
+ */
+exports.getFilterOptions = catchAsync(async (req, res, next) => {
+    const categories = await Product.distinct('category');
+    const brands = await Product.distinct('brand');
+    const colors = await Product.distinct('colors');
+    const fabric = await Product.distinct('fabric');
+    const sizes = await Product.distinct('sizes');
+    const occasion = await Product.distinct('occasion');
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            categories,
+            brands,
+            colors,
+            fabric,
+            sizes,
+            occasion
+        }
+    });
+});

@@ -39,12 +39,11 @@ const reviewSchema = new mongoose.Schema({
 reviewSchema.index({ product: 1, user: 1 }, { unique: true });
 
 // Populating user on find
-reviewSchema.pre(/^find/, function (next) {
+reviewSchema.pre(/^find/, function () {
     this.populate({
         path: 'user',
         select: 'name'
     });
-    next();
 });
 
 // Static method to calculate average rating
@@ -81,9 +80,8 @@ reviewSchema.post('save', function () {
 });
 
 // findByIdAndUpdate, findByIdAndDelete
-reviewSchema.pre(/^findOneAnd/, async function (next) {
+reviewSchema.pre(/^findOneAnd/, async function () {
     this.r = await this.findOne();
-    next();
 });
 
 reviewSchema.post(/^findOneAnd/, async function () {

@@ -111,6 +111,14 @@ app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/reviews', reviewRouter);
 app.use('/api/v1/coupons', couponRouter);
 
+// Root route
+app.get('/', (req, res) => {
+    res.status(200).json({
+        status: 'success',
+        message: 'StyleNest API is running 🚀'
+    });
+});
+
 // Handle undefined routes - Catch-all middleware
 app.use((req, res, next) => {
     next(new AppError(`Can't find ${req.originalUrl} on this server!`, 404));

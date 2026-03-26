@@ -8,7 +8,13 @@ const AppError = require('../utils/AppError');
  * @route   GET /api/v1/products
  */
 exports.getAllProducts = catchAsync(async (req, res, next) => {
-    // EXECUTE QUERY
+    // 1) EXECUTE QUERY TO GET TOTAL COUNT (BEFORE PAGINATION)
+    const countFeatures = new APIFeatures(Product.find(), req.query)
+        .filter()
+        .search();
+    const totalResults = await countFeatures.query.countDocuments();
+
+    // 2) EXECUTE QUERY FOR DATA
     const features = new APIFeatures(Product.find(), req.query)
         .filter()
         .search()
@@ -21,6 +27,7 @@ exports.getAllProducts = catchAsync(async (req, res, next) => {
     // SEND RESPONSE
     res.status(200).json({
         status: 'success',
+        totalResults,
         results: products.length,
         data: {
             products
@@ -172,6 +179,25 @@ exports.getFilterOptions = catchAsync(async (req, res, next) => {
             fabric,
             sizes,
             occasion
+        }
+    });
+});
+
+/**
+ * @desc    Get product by barcode
+ * @route   GET /api/v1/products/barcode/:code
+ */
+exports.getProductByBarcode = catchAsync(async (req, res, next) => {
+    const product = await Product.findOne({ barcode: req.params.code });
+
+    if (!product) {
+        return next(new AppError('No product found with that barcode', 404));
+    }
+
+    res.status(200).json({
+        status: 'success',
+        data: {
+            product
         }
     });
 });

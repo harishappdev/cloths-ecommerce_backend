@@ -10,6 +10,7 @@ const router = express.Router();
 router.get('/', productController.getAllProducts);
 router.get('/slug/:slug', productController.getProductBySlug);
 router.get('/filters', productController.getFilterOptions);
+router.get('/barcode/:code', productController.getProductByBarcode);
 router.get('/:id', productController.getProduct);
 
 // Admin Only Routes - Protected

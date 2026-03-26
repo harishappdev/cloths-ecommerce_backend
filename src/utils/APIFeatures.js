@@ -42,7 +42,8 @@ class APIFeatures {
                     { name: searchRegex },
                     { brand: searchRegex },
                     { category: searchRegex },
-                    { description: searchRegex }
+                    { description: searchRegex },
+                    { barcode: searchRegex }
                 ]
             });
         }

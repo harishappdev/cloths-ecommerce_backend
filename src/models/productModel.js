@@ -45,6 +45,12 @@ const productSchema = new mongoose.Schema({
         default: ['Universal']
     },
     colors: [String],
+    barcode: {
+        type: String,
+        unique: true,
+        sparse: true,
+        trim: true
+    },
     stock: {
         type: Number,
         required: [true, 'A product must have a stock count'],
